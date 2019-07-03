@@ -56,31 +56,83 @@
 #include <fstream>
 #include <functional>
 #include <iostream>
-
+#include<iterator>
 #include <gflags/gflags.h>
 #include <grpcpp/support/config.h>
 #include "test/cpp/util/cli_credentials.h"
 #include "test/cpp/util/grpc_tool.h"
 #include "test/cpp/util/test_config.h"
+#include "test/cpp/util/grpc_cli.h"
 
 DEFINE_string(outfile, "", "Output file (default is stdout)");
-
+//DEFINE_string(infile,"input.txt","Input file (default is stdin)");
+grpc::string final_result;
 static bool SimplePrint(const grpc::string& outfile,
                         const grpc::string& output) {
   if (outfile.empty()) {
-    std::cout << output << std::endl;
+    //std::cout << output << std::endl;
   } else {
     std::ofstream output_file(outfile, std::ios::app | std::ios::binary);
     output_file << output << std::endl;
     output_file.close();
   }
+  final_result = output;
+  //std::cout << final_result<<std::endl;
   return true;
+}
+
+char *matmul(int argc, char **argv) {
+ 
+  char *vec;
+  // modify argv vector
+  grpc::string a1 = "call"; 
+  grpc::string a2 = "ip6-localhost:34567";
+  grpc::string a3 = "MatMul";
+  grpc::string a4 = "tensor1_shape: \"";
+  //grpc::string a5 = "[1,3]";
+  grpc::string a5 = argv[1];
+  //grpc::string a7 ="[-2.5, 0.5,1]";
+  grpc::string a7 = argv[2];
+  //grpc::string a5 = argv[1];   //size
+  grpc::string a6 = "\" tensor1: ";
+  grpc::string a8 = " tensor2_shape: \"";
+  //grpc::string a9 = "[3,5]";
+  grpc::string a9= argv[3];
+  grpc::string a11 = argv[4];
+  //grpc::string a11 ="[1,1,1,1,1,1,0,3,0,5,0,2,0,4,0]";
+  grpc::string a10 = "\" tensor2: ";
+  grpc::string a12 = " ";
+  //grpc::string a9 = " --infile";
+  //grpc::string av = a4+a5+a6+a7+a8;
+  grpc::string av = a4+a5+a6+a7+a8+a9+a10+a11+a12;
+  vec = (char *)av.c_str();
+  //std::ofstream output_file("input.txt", std::ios::app | std::ios::binary);
+  //output_file << vec << std::endl;
+  //output_file.close(); 
+  argv[1] = (char *)a1.c_str();
+  argv[2] = (char *)a2.c_str();
+  argv[3] = (char *)a3.c_str();
+  //argv[4] = (char *)a9.c_str();
+  argv[4] = vec;
+
+  argc = 5;
+  //std::cout << vec << std::endl;
+
+  grpc::string res = "";
+  int ret = grpc::testing::GrpcToolMainLib(
+      argc, (const char**)argv, grpc::testing::CliCredentials(),
+      std::bind(SimplePrint, FLAGS_outfile, std::placeholders::_1));
+
+  if (ret == 0) {
+	res = "";
+  }
+  return (char* )final_result.c_str();
 }
 
 int main(int argc, char** argv) {
   grpc::testing::InitTest(&argc, &argv, true);
 
-  return grpc::testing::GrpcToolMainLib(
-      argc, (const char**)argv, grpc::testing::CliCredentials(),
-      std::bind(SimplePrint, FLAGS_outfile, std::placeholders::_1));
+  char *res;
+  res = matmul(argc,argv);
+  return 0;
 }
